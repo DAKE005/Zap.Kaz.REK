@@ -840,7 +840,7 @@ function searchSubstation() {
   // Если это был просто клик (без реального сдвига) — не мешаем ссылке сработать
 
   document.body.addEventListener('click', function(e) {
-  if (e.target.closest('input, button')) return;
+  if (e.target.closest('input, button, a')) return;
   if (dragMoved) {
     e.preventDefault();
     e.stopPropagation();
