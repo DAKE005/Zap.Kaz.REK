@@ -12,6 +12,15 @@
 		a:active { color:#8018CB; } 
 		a:hover { color:#E3B4F3; } 
 	</style>
+  <style>
+  @media (max-width: 768px) {
+    #ps-search { width:130px !important; font-size:16px !important; padding:8px 10px !important; }
+    #search-box { padding:8px !important; }
+  }
+  @media (max-width: 480px) {
+    #ps-search { width:100px !important; }
+  }
+</style>
 </head>
 
 <body style="background-color:#FFFFFF; margin:0; padding:0; overflow:hidden; user-select:none; -webkit-user-select:none;">
@@ -22,11 +31,13 @@
 
   // Область координаты // 
 
-<div style="position:fixed; top:15px; right:15px; z-index:9999; background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.3); font-family:sans-serif;">
+<div id="search-box" style="position:fixed; top:15px; right:15px; z-index:9999; background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.3); font-family:sans-serif; max-width:80vw;">
   <input id="ps-search" type="text" placeholder="Поиск ПС..." style="padding:9px 12px; font-size:16px; border:1px solid #ccc; border-radius:6px; width:180px;"
     onkeydown="if(event.key==='Enter') searchSubstation();">
   <button onclick="searchSubstation()" style="padding:9px 14px; font-size:16px; border:none; border-radius:6px; background:#333; color:#fff; cursor:pointer; margin-left:6px;">Найти</button>
   <div id="search-status" style="color:red; font-size:12px; margin-top:4px;"></div>
+  <button onclick="fitToScreen()" style="position:fixed; bottom:20px; right:20px; z-index:9999; width:50px; height:50px; border-radius:50%; background:#333; color:#fff; border:none; font-size:22px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.3);">⌂</button>
+  <div id="recent-list" style="margin-top:8px;"></div>
 </div>
 
   <a href="wsp_images/Сайхин.jpg" style="text-decoration:none"><div style="box-sizing: border-box; border-radius: 9px; position:absolute; left:589px; top:3742px; width:37px; height:34px; background-color:#BDBDBD; background: linear-gradient(to bottom, #F5F5F5, #BDBDBD); border: 1px solid #ACACAC; " id="button_8538c1f">
@@ -777,10 +788,32 @@ function searchSubstation() {
       const initialScale = Math.min(window.innerWidth / IMG_WIDTH, window.innerHeight / IMG_HEIGHT);
       goToCoords(found.left, found.top, initialScale * 3);
       statusEl.textContent = '';
+      saveRecent(found.name);
     } else {
       statusEl.textContent = 'Не найдено: ' + query;
     }
   }, 150);
+}
+
+function saveRecent(name) {
+  let recent = JSON.parse(localStorage.getItem('recentPS') || '[]');
+  recent = recent.filter(n => n !== name);
+  recent.unshift(name);
+  recent = recent.slice(0, 5);
+  localStorage.setItem('recentPS', JSON.stringify(recent));
+  renderRecent();
+}
+
+function renderRecent() {
+  const recent = JSON.parse(localStorage.getItem('recentPS') || '[]');
+  const box = document.getElementById('recent-list');
+  if (!box) return;
+  box.innerHTML = recent.map(name => {
+    const ps = substations.find(p => p.name === name);
+    if (!ps) return '';
+    const s = Math.min(window.innerWidth / IMG_WIDTH, window.innerHeight / IMG_HEIGHT) * 3;
+    return '<div onclick="goToCoords(' + ps.left + ',' + ps.top + ',' + s + ')" style="padding:6px 10px; cursor:pointer; font-size:14px; border-bottom:1px solid #eee;">' + name + '</div>';
+  }).join('');
 }
 
   function fitToScreen() {
@@ -839,7 +872,7 @@ function searchSubstation() {
 
   // Если это был просто клик (без реального сдвига) — не мешаем ссылке сработать
 
-  document.body.addEventListener('click', function(e) {
+ document.body.addEventListener('click', function(e) {
   if (e.target.closest('input, button, a')) return;
   if (dragMoved) {
     e.preventDefault();
@@ -865,9 +898,12 @@ function searchSubstation() {
     }
   }, { passive: false });
 
-  window.addEventListener('load', fitToScreen);
+  window.addEventListener('load', function() { fitToScreen(); renderRecent(); });
   window.addEventListener('resize', fitToScreen);
   document.body.style.cursor = 'grab';
+  window.addEventListener('pageshow', function(e) {
+  fitToScreen();
+});
 </script>
 </body>
 </html>
