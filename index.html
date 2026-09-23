@@ -1019,11 +1019,23 @@ function renderRecent() {
 
   // Перетаскивание пальцем (планшет/телефон)
   let touchStartX, touchStartY;
+let pinchStartDist = null;
+let pinchStartScale = 1;
+
+function getTouchDist(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
 
 function resetTouchBaseline(e) {
   if (e.touches.length === 1) {
     touchStartX = e.touches[0].clientX - translateX;
     touchStartY = e.touches[0].clientY - translateY;
+    pinchStartDist = null;
+  } else if (e.touches.length === 2) {
+    pinchStartDist = getTouchDist(e.touches);
+    pinchStartScale = scale;
   }
 }
 
@@ -1041,6 +1053,22 @@ document.body.addEventListener('touchmove', function(e) {
     e.preventDefault();
     translateX = e.touches[0].clientX - touchStartX;
     translateY = e.touches[0].clientY - touchStartY;
+    applyTransform();
+  } else if (e.touches.length === 2 && pinchStartDist) {
+    e.preventDefault();
+    const newDist = getTouchDist(e.touches);
+    const newScale = Math.min(Math.max(pinchStartScale * (newDist / pinchStartDist), 0.1), 5);
+
+    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const rect = wrapper.getBoundingClientRect();
+    const mouseX = midX - rect.left;
+    const mouseY = midY - rect.top;
+
+    translateX -= (mouseX / scale) * (newScale - scale);
+    translateY -= (mouseY / scale) * (newScale - scale);
+
+    scale = newScale;
     applyTransform();
   }
 }, { passive: false });
