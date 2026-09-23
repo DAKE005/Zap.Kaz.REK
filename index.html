@@ -1019,21 +1019,31 @@ function renderRecent() {
 
   // Перетаскивание пальцем (планшет/телефон)
   let touchStartX, touchStartY;
- document.body.addEventListener('touchstart', function(e) {
-  if (e.target.closest('input, button, a')) return;
+
+function resetTouchBaseline(e) {
   if (e.touches.length === 1) {
     touchStartX = e.touches[0].clientX - translateX;
     touchStartY = e.touches[0].clientY - translateY;
   }
+}
+
+document.body.addEventListener('touchstart', function(e) {
+  if (e.target.closest('input, button, a')) return;
+  resetTouchBaseline(e);
 });
-  document.body.addEventListener('touchmove', function(e) {
-    if (e.touches.length === 1) {
-      e.preventDefault();
-      translateX = e.touches[0].clientX - touchStartX;
-      translateY = e.touches[0].clientY - touchStartY;
-      applyTransform();
-    }
-  }, { passive: false });
+
+document.body.addEventListener('touchend', function(e) {
+  resetTouchBaseline(e);
+});
+
+document.body.addEventListener('touchmove', function(e) {
+  if (e.touches.length === 1) {
+    e.preventDefault();
+    translateX = e.touches[0].clientX - touchStartX;
+    translateY = e.touches[0].clientY - touchStartY;
+    applyTransform();
+  }
+}, { passive: false });
 
   window.addEventListener('load', function() { fitToScreen(); renderRecent(); });
   let lastWidth = window.innerWidth;
